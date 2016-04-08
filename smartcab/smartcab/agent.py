@@ -2,7 +2,7 @@ import random
 from environment import Agent, Environment
 from planner import RoutePlanner
 from simulator import Simulator
-
+import random 
 class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
 
@@ -25,8 +25,20 @@ class LearningAgent(Agent):
         # TODO: Update state
         
         # TODO: Select action according to your policy
+        # random action
+        
         action = None
-
+        ran=random.randint(1,4)
+        if ran == 1:
+            actino = None
+        elif ran==2:
+            action = 'forward'
+        elif ran==3:
+            action = 'left'
+        elif ran==4:
+            action = 'right'   
+        else:
+            action = none
         # Execute action and get reward
         reward = self.env.act(self, action)
 
