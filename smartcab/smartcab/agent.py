@@ -21,24 +21,25 @@ class LearningAgent(Agent):
         self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
-
-        # TODO: Update state
         
+        # TODO: Update state
+        self.state=self.next_waypoint;
         # TODO: Select action according to your policy
         # random action
-        
         action = None
-        ran=random.randint(1,4)
-        if ran == 1:
-            actino = None
-        elif ran==2:
-            action = 'forward'
-        elif ran==3:
-            action = 'left'
-        elif ran==4:
-            action = 'right'   
-        else:
-            action = none
+        action = self.state
+        # ran=random.randint(1,4)
+        # if ran == 1:
+        #     actino = None
+        # elif ran==2:
+        #     action = 'forward'
+        # elif ran==3:
+        #     action = 'left'
+        # elif ran==4:
+        #     action = 'right'   
+        # else:
+        #     action = none
+
         # Execute action and get reward
         reward = self.env.act(self, action)
 
@@ -53,7 +54,7 @@ def run():
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent)  # create agent
-    e.set_primary_agent(a, enforce_deadline=False)  # set agent to track
+    e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
 
     # Now simulate it
     sim = Simulator(e, update_delay=1.0)  # reduce update_delay to speed up simulation
