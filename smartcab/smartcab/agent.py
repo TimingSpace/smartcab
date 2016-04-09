@@ -23,22 +23,26 @@ class LearningAgent(Agent):
         deadline = self.env.get_deadline(self)
         
         # TODO: Update state
-        self.state=self.next_waypoint;
+        AvailableInformation=[('Next Way Point:', self.next_waypoint),
+        ('On Comming:',inputs['oncoming']),
+        ('Left:',inputs['left']),
+        ('Right:',inputs['right']),
+        ('Deadline',deadline)]
+        self.state=AvailableInformation[:];
         # TODO: Select action according to your policy
         # random action
         action = None
-        action = self.state
-        # ran=random.randint(1,4)
-        # if ran == 1:
-        #     actino = None
-        # elif ran==2:
-        #     action = 'forward'
-        # elif ran==3:
-        #     action = 'left'
-        # elif ran==4:
-        #     action = 'right'   
-        # else:
-        #     action = none
+        ran=random.randint(1,4)
+        if ran == 1:
+            actino = None
+        elif ran==2:
+            action = 'forward'
+        elif ran==3:
+            action = 'left'
+        elif ran==4:
+            action = 'right'   
+        else:
+            action = none
 
         # Execute action and get reward
         reward = self.env.act(self, action)
