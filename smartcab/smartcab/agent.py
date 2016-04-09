@@ -28,27 +28,15 @@ class LearningAgent(Agent):
         ('Left:',inputs['left']),
         ('Right:',inputs['right']),
         ('Deadline',deadline)]
-        self.state=AvailableInformation[:];
+        self.state=AvailableInformation[0:4];
         # TODO: Select action according to your policy
         # random action
-        action = None
-        ran=random.randint(1,4)
-        if ran == 1:
-            actino = None
-        elif ran==2:
-            action = 'forward'
-        elif ran==3:
-            action = 'left'
-        elif ran==4:
-            action = 'right'   
-        else:
-            action = none
+        action=random.choice(self.env.valid_actions)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
 
         # TODO: Learn policy based on state, action, reward
-
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
 
 
