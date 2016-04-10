@@ -12,13 +12,15 @@ class LearningAgent(Agent):
         self.color = 'red'  # override color
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
-        self.alpha=0.5 # learning rate
+        self.alpha=1 # learning rate
+        self.timer=1 # timer for modify learning rate
         self.lamda=0.5 # reward discount
         self.q_value=OrderedDict(); # Q value
         self.q_inti_value_Flag=True; # whether to initialize Q value
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
+        self.timer=1
         # TODO: Prepare for a new trip; reset any variables here, if required
 
     def update(self, t):
@@ -66,6 +68,7 @@ class LearningAgent(Agent):
         #update Q value by equation q=(1-alpha)*q+alpha(reward+lamda*expected_next_reward)
         else:
             # get new state after the action to calculate expected_next_reward
+            self.alpha=1/float(self.timer)
             new_next_waypoint = self.planner.next_waypoint() # 
             new_inputs = self.env.sense(self)
 
