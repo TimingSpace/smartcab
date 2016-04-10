@@ -14,13 +14,16 @@ class LearningAgent(Agent):
         # TODO: Initialize any additional variables here
         self.alpha=1 # learning rate
         self.timer=1 # timer for modify learning rate
-        self.lamda=0.5 # reward discount
+        self.lamda=0.8 # reward discount parameter to adjust
+        self.life=0;
+        self.failure_times=0;
         self.q_value=OrderedDict(); # Q value
         self.q_inti_value_Flag=True; # whether to initialize Q value
-
+        self.penalty_times=0
     def reset(self, destination=None):
         self.planner.route_to(destination)
         self.timer=1
+        self.life=self.life+1
         # TODO: Prepare for a new trip; reset any variables here, if required
 
     def update(self, t):
@@ -28,6 +31,8 @@ class LearningAgent(Agent):
         self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
+        if deadline == 0 and self.life>=20:
+            self.failure_times+=1
         # TODO: Update state
         #Available state
         AvailableInformation=[('Next Way Point:', self.next_waypoint),
@@ -42,20 +47,24 @@ class LearningAgent(Agent):
         # comingAgents=validComingAgents[]
 
         self.state=AvailableInformation[0:2];# states without deadline,just light and next_waypoint as state
-        print 'Model>>>>  Light: ',inputs['light'],"  Next_waypoint:", self.next_waypoint
+        # print 'Model>>>>  Light: ',inputs['light'],"  Next_waypoint:", self.next_waypoint
         # TODO: Select action according to your policy
         # random action
-        action= random.choice(self.env.valid_actions)
-        if self.q_inti_value_Flag==False:
-            print 'QValue>>>> Forward: ',self.q_value[(inputs['light'],self.next_waypoint,'forward')],\
-                'Left: ',self.q_value[(inputs['light'],self.next_waypoint,'left')],\
-                'Right: ',self.q_value[(inputs['light'],self.next_waypoint,'right')]
-            action = self.get_max_a_r(inputs['light'],self.next_waypoint)[1]
-        # Execute action and get reward
-        print 'Action>>>> ', action
-        print '-------------------------------------------'
-        reward = self.env.act(self, action)
 
+        action= random.choice(self.env.valid_actions)
+        if self.q_inti_value_Flag==False and self.life>=20:
+            # print 'QValue>>>> Forward: ',self.q_value[(inputs['light'],self.next_waypoint,'forward')],\
+            #     'Left: ',self.q_value[(inputs['light'],self.next_waypoint,'left')],\
+            #     'Right: ',self.q_value[(inputs['light'],self.next_waypoint,'right')]
+            ran=random.randint(1,10)#x% probability to follow Q
+            if ran>0: # parameter to adjust
+                action = self.get_max_a_r(inputs['light'],self.next_waypoint)[1]
+        # Execute action and get reward
+        # print 'Action>>>> ', action
+        # print '-------------------------------------------'
+        reward = self.env.act(self, action)
+        if reward<0 and self.life>=20:
+            self.penalty_times=self.penalty_times+1
         # TODO: Learn policy based on state, action, reward
        
         #initial Q value only do once on the robot born set all value to zero
@@ -104,9 +113,9 @@ def run():
     e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=1.0)  # reduce update_delay to speed up simulation
-    sim.run(n_trials=10)  # press Esc or close pygame window to quit
-
+    sim = Simulator(e, update_delay=0.01)  # reduce update_delay to speed up simulation
+    sim.run(n_trials=120)  # press Esc or close pygame window to quit
+    print 'failure_times: ',a.failure_times,'  penalty_times: ',a.penalty_times
 
 if __name__ == '__main__':
     run()
