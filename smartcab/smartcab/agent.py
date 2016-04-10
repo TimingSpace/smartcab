@@ -40,13 +40,18 @@ class LearningAgent(Agent):
         # comingAgents=validComingAgents[]
 
         self.state=AvailableInformation[0:2];# states without deadline,just light and next_waypoint as state
+        print 'Model>>>>  Light: ',inputs['light'],"  Next_waypoint:", self.next_waypoint
         # TODO: Select action according to your policy
         # random action
         action= random.choice(self.env.valid_actions)
         if self.q_inti_value_Flag==False:
+            print 'QValue>>>> Forward: ',self.q_value[(inputs['light'],self.next_waypoint,'forward')],\
+                'Left: ',self.q_value[(inputs['light'],self.next_waypoint,'left')],\
+                'Right: ',self.q_value[(inputs['light'],self.next_waypoint,'right')]
             action = self.get_max_a_r(inputs['light'],self.next_waypoint)[1]
         # Execute action and get reward
-
+        print 'Action>>>> ', action
+        print '-------------------------------------------'
         reward = self.env.act(self, action)
 
         # TODO: Learn policy based on state, action, reward
@@ -67,8 +72,7 @@ class LearningAgent(Agent):
             self.q_value[(inputs['light'],self.next_waypoint,action)]=\
                 (1-self.alpha)*self.q_value[(inputs['light'],self.next_waypoint,action)]+\
                 self.alpha*(reward+self.lamda*self.get_max_a_r(new_inputs['light'],new_next_waypoint)[0])
-        print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
-        print self.q_value
+        #print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
     # define a function to get Q and action
     # input light_cond: current light condiction
     # input next_waypoint_cond: current next waypoint
