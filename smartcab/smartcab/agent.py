@@ -23,7 +23,7 @@ class LearningAgent(Agent):
         self.q_value_ground_truth=OrderedDict();# Q value ground true use as a metric
         self.q_inti_value_Flag=True; # whether to initialize Q value
         self.penalty_times=0
-        self.learn_time=10
+        self.learn_time=8
         self.q_value_valid=[]
     def reset(self, destination=None):
         self.planner.route_to(destination)
@@ -61,7 +61,7 @@ class LearningAgent(Agent):
             #     'Left: ',self.q_value[(inputs['light'],self.next_waypoint,'left')],\
             #     'Right: ',self.q_value[(inputs['light'],self.next_waypoint,'right')]
             ran=random.randint(1,10)#x% probability to follow Q
-            if ran>0: # parameter to adjust
+            if ran>3: # parameter to adjust
                 action = self.get_max_a_r(inputs['light'],self.next_waypoint)[1]
         # Execute action and get reward
         # print 'Action>>>> ', action
@@ -148,15 +148,10 @@ def run():
 
     # Now simulate it
     sim = Simulator(e, update_delay=0.01)  # reduce update_delay to speed up simulation
-    sim.run(n_trials=10)  # press Esc or close pygame window to quit
-    print 'failure_times: ',a.failure_times,'  penalty_times: ',a.penalty_times
+    sim.run(n_trials=108)  # press Esc or close pygame window to quit
+    #print 'Success rate: ',(100.0-a.failure_times)/100.0,'  penalty_times: ',a.penalty_times
     
     print 'Q Value: ',a.q_value
-    plt.xlabel('Iterate times')
-    plt.ylabel('Similarity')
-    plt.title('Similarity with learning time')
-    plt.plot(a.q_value_valid)
-    plt.show()
 
 if __name__ == '__main__':
     run()
