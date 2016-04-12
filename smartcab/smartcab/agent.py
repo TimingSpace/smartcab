@@ -4,6 +4,8 @@ from planner import RoutePlanner
 from simulator import Simulator
 from collections import OrderedDict
 import random 
+import numpy as np
+import matplotlib.pyplot as plt
 class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
 
@@ -14,24 +16,26 @@ class LearningAgent(Agent):
         # TODO: Initialize any additional variables here
         self.alpha=1 # learning rate
         self.timer=1 # timer for modify learning rate
-        self.lamda=0.8 # reward discount parameter to adjust
+        self.lamda=0 # reward discount parameter to adjust
         self.life=0;
         self.failure_times=0;
         self.q_value=OrderedDict(); # Q value
+        self.q_value_ground_truth=OrderedDict();# Q value ground true use as a metric
         self.q_inti_value_Flag=True; # whether to initialize Q value
         self.penalty_times=0
+        self.learn_time=10
+        self.q_value_valid=[]
     def reset(self, destination=None):
         self.planner.route_to(destination)
         self.timer=1
         self.life=self.life+1
         # TODO: Prepare for a new trip; reset any variables here, if required
-
     def update(self, t):
         # Gather inputs
         self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
-        if deadline == 0 and self.life>=20:
+        if deadline == 0 and self.life>=self.learn_time:
             self.failure_times+=1
         # TODO: Update state
         #Available state
@@ -52,7 +56,7 @@ class LearningAgent(Agent):
         # random action
 
         action= random.choice(self.env.valid_actions)
-        if self.q_inti_value_Flag==False and self.life>=20:
+        if self.q_inti_value_Flag==False and self.life>=self.learn_time:
             # print 'QValue>>>> Forward: ',self.q_value[(inputs['light'],self.next_waypoint,'forward')],\
             #     'Left: ',self.q_value[(inputs['light'],self.next_waypoint,'left')],\
             #     'Right: ',self.q_value[(inputs['light'],self.next_waypoint,'right')]
@@ -63,7 +67,7 @@ class LearningAgent(Agent):
         # print 'Action>>>> ', action
         # print '-------------------------------------------'
         reward = self.env.act(self, action)
-        if reward<0 and self.life>=20:
+        if reward<0 and self.life>=self.learn_time:
             self.penalty_times=self.penalty_times+1
         # TODO: Learn policy based on state, action, reward
        
@@ -73,6 +77,17 @@ class LearningAgent(Agent):
                 for next_waypoint_cond in ['forward','left','right']:
                     for act in self.env.valid_actions:
                         self.q_value[(light_cond,next_waypoint_cond,act)]=0
+                        
+                        # initial ground truth
+                        if act == None:
+                            self.q_value_ground_truth[(light_cond,next_waypoint_cond,act)]=1;
+                        else:
+                            if light_cond == 'red' and act != 'right':
+                                self.q_value_ground_truth[(light_cond,next_waypoint_cond,act)]=-1;
+                            else:
+                                self.q_value_ground_truth[(light_cond,next_waypoint_cond,act)]= 2 if act == next_waypoint_cond else 0.5 
+
+
                         self.q_inti_value_Flag=False
         #update Q value by equation q=(1-alpha)*q+alpha(reward+lamda*expected_next_reward)
         else:
@@ -84,24 +99,43 @@ class LearningAgent(Agent):
             self.q_value[(inputs['light'],self.next_waypoint,action)]=\
                 (1-self.alpha)*self.q_value[(inputs['light'],self.next_waypoint,action)]+\
                 self.alpha*(reward+self.lamda*self.get_max_a_r(new_inputs['light'],new_next_waypoint)[0])
+        if self.life<self.learn_time:
+            self.q_value_valid.append(self.get_q_valid())
         #print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
     # define a function to get Q and action
     # input light_cond: current light condiction
     # input next_waypoint_cond: current next waypoint
     # output (expected Q value, best action)
     def get_max_a_r(self,light_cond,next_waypoint_cond):
-        acts=['forward','left','right']
+        acts=['forward','left','right',None]
         values = (self.q_value[light_cond,next_waypoint_cond,'forward'],
             self.q_value[light_cond,next_waypoint_cond,'left'],
-            self.q_value[light_cond,next_waypoint_cond,'right'])
+            self.q_value[light_cond,next_waypoint_cond,'right'],
+            self.q_value[light_cond,next_waypoint_cond,None])
         maxValue =max(values)
         act_choices_index=[]
 
-        for index in range(0,3):
+        for index in range(0,4):
             if values[index]==maxValue:
                 act_choices_index.append(index)
         act=random.choice([acts[i] for i in act_choices_index])
         return (maxValue,act)
+
+
+    def get_q_valid(self):
+        q_vector=[]
+        q_ground_truth=[]
+        for light_cond in ['green', 'red']:
+                for next_waypoint_cond in ['forward','left','right']:
+                    for act in self.env.valid_actions:
+                        q_vector.append(self.q_value[light_cond,next_waypoint_cond,act])
+                        q_ground_truth.append(self.q_value_ground_truth[light_cond,next_waypoint_cond,act])
+        q_vector=np.array(q_vector)
+        q_ground_truth=np.array(q_ground_truth)
+        q_vector_l2_norm=np.sum(q_vector*q_vector)**0.5
+        q_ground_truth_l2_norm=np.sum(q_ground_truth*q_ground_truth)**0.5
+        valid=np.sum(q_vector*q_ground_truth)/(q_vector_l2_norm*q_ground_truth_l2_norm)
+        return valid
 
 
 def run():
@@ -114,8 +148,15 @@ def run():
 
     # Now simulate it
     sim = Simulator(e, update_delay=0.01)  # reduce update_delay to speed up simulation
-    sim.run(n_trials=120)  # press Esc or close pygame window to quit
+    sim.run(n_trials=10)  # press Esc or close pygame window to quit
     print 'failure_times: ',a.failure_times,'  penalty_times: ',a.penalty_times
+    
+    print 'Q Value: ',a.q_value
+    plt.xlabel('Iterate times')
+    plt.ylabel('Similarity')
+    plt.title('Similarity with learning time')
+    plt.plot(a.q_value_valid)
+    plt.show()
 
 if __name__ == '__main__':
     run()
